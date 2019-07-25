@@ -10,6 +10,14 @@ import (
 	"github.com/urfave/cli"
 )
 
+type Colors struct {
+	Purple     int64
+	DarkPurple int64
+	Green      int64
+	Red        int64
+	Yellow     int64
+}
+
 var opts struct {
 	Debug        bool
 	Interval     time.Duration
@@ -18,12 +26,8 @@ var opts struct {
 		Username string
 		Password string
 	}
-	Colors struct {
-		Green  int64
-		Red    int64
-		Yellow int64
-	}
-	Hue struct {
+	Colors Colors
+	Hue    struct {
 		ApiKey string
 	}
 }
@@ -62,6 +66,20 @@ func main() {
 			Usage:       "set saturation of green",
 			EnvVar:      "GREEN",
 			Destination: &opts.Colors.Green,
+		},
+		cli.Int64Flag{
+			Name:        "purple",
+			Value:       43000,
+			Usage:       "set saturation of purple",
+			EnvVar:      "BLUE",
+			Destination: &opts.Colors.Purple,
+		},
+		cli.Int64Flag{
+			Name:        "dark-purple",
+			Value:       46920,
+			Usage:       "set saturation of dark purple",
+			EnvVar:      "BLUE",
+			Destination: &opts.Colors.DarkPurple,
 		},
 		cli.Int64Flag{
 			Name:        "red",
@@ -103,7 +121,7 @@ func run(_ *cli.Context) error {
 		return err
 	}
 
-	fn := manageColor(opts.Hue.ApiKey, addr, opts.Colors.Green, opts.Colors.Red, opts.Colors.Yellow)
+	fn := manageColor(opts.Hue.ApiKey, addr, opts.Colors)
 
 	fmt.Println(err)
 	for _, repo := range opts.Repositories {

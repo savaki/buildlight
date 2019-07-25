@@ -65,7 +65,7 @@ func setColor(apiKey, addr string, hue int64) error {
 	return nil
 }
 
-func manageColor(apiKey, addr string, green, red, yellow int64) func(Status) {
+func manageColor(apiKey, addr string, colors Colors) func(Status) {
 	ch := make(chan Status, 1)
 
 	go func() {
@@ -79,24 +79,40 @@ func manageColor(apiKey, addr string, green, red, yellow int64) func(Status) {
 		for {
 			select {
 			case <-ticker.C:
-				if status == StatusSuccess {
+				if status == StatusSuccessful {
 					if status == lastStatus {
 						// do nothing
-					} else if err := setColor(apiKey, addr, green); err != nil {
+					} else if err := setColor(apiKey, addr, colors.Green); err != nil {
 						fmt.Println(err)
 					} else if opts.Debug {
 						fmt.Println("changing to green")
 					}
 
-				} else if status == StatusFail {
+				} else if status == StatusInProgress {
 					if highlight {
-						if err := setColor(apiKey, addr, red); err != nil {
+						if err := setColor(apiKey, addr, colors.Purple); err != nil {
+							fmt.Println(err)
+						} else if opts.Debug {
+							fmt.Println("changing to blue")
+						}
+					} else {
+						if err := setColor(apiKey, addr, colors.DarkPurple); err != nil {
+							fmt.Println(err)
+						} else if opts.Debug {
+							fmt.Println("changing to light purple")
+						}
+					}
+					highlight = !highlight
+
+				} else if status == StatusFailed {
+					if highlight {
+						if err := setColor(apiKey, addr, colors.Red); err != nil {
 							fmt.Println(err)
 						} else if opts.Debug {
 							fmt.Println("changing to red")
 						}
 					} else {
-						if err := setColor(apiKey, addr, yellow); err != nil {
+						if err := setColor(apiKey, addr, colors.Yellow); err != nil {
 							fmt.Println(err)
 						} else if opts.Debug {
 							fmt.Println("changing to light red")
@@ -113,12 +129,6 @@ func manageColor(apiKey, addr string, green, red, yellow int64) func(Status) {
 	}()
 
 	return func(status Status) {
-		fmt.Println("got", status)
-		//if status == StatusSuccess {
-		//	ch <- StatusFail
-		//} else {
-		//	ch <- StatusSuccess
-		//}
 		ch <- status
 	}
 }
