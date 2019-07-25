@@ -69,7 +69,7 @@ func manageColor(apiKey, addr string, colors Colors) func(Status) {
 	ch := make(chan Status, 1)
 
 	go func() {
-		ticker := time.NewTicker(time.Second)
+		ticker := time.NewTicker(750 * time.Millisecond)
 		defer ticker.Stop()
 
 		status := StatusNotSet
