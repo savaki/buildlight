@@ -19,6 +19,11 @@ const (
 	StatusFailed     Status = "fail"
 )
 
+type Event struct {
+	Repo   string
+	Status Status
+}
+
 func getBuildStatus(username, password, repo string) (Status, error) {
 	uri := fmt.Sprintf("https://api.bitbucket.org/2.0/repositories/%v/pipelines/?sort=-created_on&pagelen=10", repo)
 	req, err := http.NewRequest(http.MethodGet, uri, nil)
@@ -74,7 +79,7 @@ func getBuildStatus(username, password, repo string) (Status, error) {
 			stateName = v
 			break
 		}
-		if v := value.State.Result.Name; v != "" {
+		if v := value.State.Result.Name; v != "" && v != "STOPPED" { // ignores STOPPED events
 			stateName = v
 			break
 		}
@@ -100,7 +105,7 @@ func getBuildStatus(username, password, repo string) (Status, error) {
 	}
 }
 
-func pollBuildStatus(username, password, repo string, interval time.Duration, updateFunc func(Status)) {
+func pollBuildStatus(username, password, repo string, interval time.Duration, updateFunc func(Event)) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
@@ -111,7 +116,10 @@ func pollBuildStatus(username, password, repo string, interval time.Duration, up
 			continue
 		}
 
-		updateFunc(status)
+		updateFunc(Event{
+			Repo:   repo,
+			Status: status,
+		})
 
 		select {
 		case <-ticker.C:

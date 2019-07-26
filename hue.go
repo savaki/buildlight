@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"golang.org/x/xerrors"
@@ -65,7 +66,7 @@ func setColor(apiKey, addr string, hue int64) error {
 	return nil
 }
 
-func manageColor(apiKey, addr string, colors Colors) func(Status) {
+func manageColor(apiKey, addr string, colors Colors) func(Event) {
 	ch := make(chan Status, 1)
 
 	go func() {
@@ -128,7 +129,28 @@ func manageColor(apiKey, addr string, colors Colors) func(Status) {
 		}
 	}()
 
-	return func(status Status) {
-		ch <- status
+	mutex := &sync.Mutex{}
+	statuses := map[string]Status{}
+
+	return func(event Event) {
+		mutex.Lock()
+		defer mutex.Unlock()
+
+		statuses[event.Repo] = event.Status
+
+		// Rules:
+		// 1. if any failed -> red
+		// 2. otherwise if any build -> blue
+		// 3. else green
+		for _, status := range []Status{StatusFailed, StatusInProgress} {
+			for _, got := range statuses {
+				if got == status {
+					ch <- status
+					return
+				}
+			}
+		}
+
+		ch <- StatusSuccessful
 	}
 }
